@@ -1,5 +1,5 @@
 from django.db import models
-# from .errors import error_decorator
+from django.db.models import Q
 
 
 def error_decorator(func):
@@ -49,22 +49,29 @@ class Category(models.Model):
 
     @staticmethod
     def get_info(id):
+        response = {}
         selected = Category.objects.get(id=id)
         if selected:
-            parent = selected.parent
-            sublings = Category.objects.filter(parent_id=selected.parent_id)
-
-            response = {
+            response.update({
                 'id': selected.id,
-                'name': selected.name,
-                'parent': {
-                    'name': parent.name,
-                    'id': parent.id
-                },
-                'sublings': [
-                    {'name': subling.name,
-                     'id': subling.id}
-                    for subling in sublings
-                    ]
-            }
+                'name': selected.name
+            })
+
+            parent = selected.parent
+            if parent:
+                response.update({
+                    'parent': {
+                        'name': parent.name,
+                        'id': parent.id
+                    },
+                })
+                sublings = Category.objects.filter(parent_id=selected.parent_id).filter(~Q(id=selected.id))
+                sublings = sublings
+                response.update({
+                    'sublings': [
+                        {'name': subling.name,
+                         'id': subling.id}
+                        for subling in sublings
+                        ]
+                })
             return response
